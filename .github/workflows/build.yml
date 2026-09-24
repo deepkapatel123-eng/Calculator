@@ -1,0 +1,57 @@
+name: Build Calculator APK
+
+on:
+  push:
+    branches: [ '*' ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download Complete Code
+        run: |
+          curl -sLo app.zip https://ais-pre-hpqspgqs4k64sim3flwmp6-931819032064.asia-southeast1.run.app/calculator-app.zip
+          unzip -o app.zip
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Build Android App
+        run: |
+          npm install
+          npm run build
+          npx @capacitor/cli add android || true
+          npx @capacitor/cli sync android
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Calculator-App
+          path: android/app/build/outputs/apk/debug/*.apk
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        continue-on-error: true
+        with:
+          tag_name: "v1.0"
+          name: "Calculator APK v1.0"
+          body: "Click Calculator-App.apk below to install on your Android device!"
+          files: android/app/build/outputs/apk/debug/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
