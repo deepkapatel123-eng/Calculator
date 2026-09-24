@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+    <linearGradient id="btnGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#f3f4f6" />
+    </linearGradient>
+  </defs>
+  <!-- Background squircle -->
+  <rect x="32" y="32" width="448" height="448" rx="96" fill="url(#bgGrad)" />
+  
+  <!-- Screen Display -->
+  <rect x="80" y="88" width="352" height="104" rx="24" fill="#ffffff" />
+  <!-- Display Digits text -->
+  <text x="408" y="158" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="52" font-weight="700" fill="#111827" text-anchor="end">1,234</text>
+  
+  <!-- Calculator Keypad Grid -->
+  <!-- Row 1 -->
+  <circle cx="128" cy="248" r="32" fill="url(#btnGrad)" />
+  <text x="128" y="258" font-family="sans-serif" font-size="28" font-weight="600" fill="#047857" text-anchor="middle">C</text>
+
+  <circle cx="213" cy="248" r="32" fill="url(#btnGrad)" />
+  <text x="213" y="258" font-family="sans-serif" font-size="28" font-weight="600" fill="#047857" text-anchor="middle">()</text>
+
+  <circle cx="298" cy="248" r="32" fill="url(#btnGrad)" />
+  <text x="298" y="258" font-family="sans-serif" font-size="28" font-weight="600" fill="#047857" text-anchor="middle">%</text>
+
+  <circle cx="384" cy="248" r="32" fill="#10b981" />
+  <text x="384" y="258" font-family="sans-serif" font-size="32" font-weight="600" fill="#ffffff" text-anchor="middle">÷</text>
+
+  <!-- Row 2 -->
+  <circle cx="128" cy="328" r="32" fill="url(#btnGrad)" />
+  <text x="128" y="338" font-family="sans-serif" font-size="28" font-weight="600" fill="#1f2937" text-anchor="middle">7</text>
+
+  <circle cx="213" cy="328" r="32" fill="url(#btnGrad)" />
+  <text x="213" y="338" font-family="sans-serif" font-size="28" font-weight="600" fill="#1f2937" text-anchor="middle">8</text>
+
+  <circle cx="298" cy="328" r="32" fill="url(#btnGrad)" />
+  <text x="298" y="338" font-family="sans-serif" font-size="28" font-weight="600" fill="#1f2937" text-anchor="middle">9</text>
+
+  <circle cx="384" cy="328" r="32" fill="#10b981" />
+  <text x="384" y="338" font-family="sans-serif" font-size="32" font-weight="600" fill="#ffffff" text-anchor="middle">×</text>
+
+  <!-- Row 3 -->
+  <circle cx="128" cy="408" r="32" fill="url(#btnGrad)" />
+  <text x="128" y="418" font-family="sans-serif" font-size="28" font-weight="600" fill="#1f2937" text-anchor="middle">4</text>
+
+  <circle cx="213" cy="408" r="32" fill="url(#btnGrad)" />
+  <text x="213" y="418" font-family="sans-serif" font-size="28" font-weight="600" fill="#1f2937" text-anchor="middle">5</text>
+
+  <circle cx="298" cy="408" r="32" fill="url(#btnGrad)" />
+  <text x="298" y="418" font-family="sans-serif" font-size="28" font-weight="600" fill="#1f2937" text-anchor="middle">6</text>
+
+  <circle cx="384" cy="408" r="32" fill="#34d399" />
+  <text x="384" y="418" font-family="sans-serif" font-size="32" font-weight="700" fill="#064e3b" text-anchor="middle">=</text>
+</svg>
