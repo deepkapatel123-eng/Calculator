@@ -16,11 +16,13 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Extract Code
+      - name: Extract Any Zip Code
         run: |
-          if [ -f calculator-app.zip ]; then
-            unzip -o calculator-app.zip
-          fi
+          shopt -s nullglob
+          for f in *.zip; do
+            echo "Unzipping $f"
+            unzip -o "$f"
+          done
 
       - name: Setup Node
         uses: actions/setup-node@v4
