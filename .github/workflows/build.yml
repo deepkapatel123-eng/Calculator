@@ -13,10 +13,14 @@ jobs:
       contents: write
 
     steps:
-      - name: Download Complete Code
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Extract Code
         run: |
-          curl -sLo app.zip https://ais-pre-hpqspgqs4k64sim3flwmp6-931819032064.asia-southeast1.run.app/calculator-app.zip
-          unzip -o app.zip
+          if [ -f calculator-app.zip ]; then
+            unzip -o calculator-app.zip
+          fi
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -35,6 +39,7 @@ jobs:
           npm run build
           npx @capacitor/cli add android || true
           npx @capacitor/cli sync android
+          node scripts/patch-android.cjs || true
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
@@ -49,8 +54,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         continue-on-error: true
         with:
-          tag_name: "v1.0"
-          name: "Calculator APK v1.0"
+          tag_name: "v1.0-${{ github.run_number }}"
+          name: "Calculator APK"
           body: "Click Calculator-App.apk below to install on your Android device!"
           files: android/app/build/outputs/apk/debug/*.apk
         env:
