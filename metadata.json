@@ -1,0 +1,6 @@
+{
+  "name": "Calculator",
+  "description": "A sleek mobile-style calculator featuring standard and scientific arithmetic, unit conversion, history logs, and instant UPI VPA QR code generation for payments.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
