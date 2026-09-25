@@ -53,13 +53,13 @@ export const Calculator: React.FC<CalculatorProps> = ({
   theme = 'light',
   onToggleTheme,
 }) => {
-  // Current equation. Stored and preserved at all times so ongoing work (e.g. 500+) is never lost!
-  const [equation, setEquation] = useState<string>('500+');
+  // Current equation. Stored and preserved at all times
+  const [equation, setEquation] = useState<string>('0');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isScientificOpen, setIsScientificOpen] = useState<boolean>(false);
 
-  // Split history view is open
-  const [isInlineHistoryOpen, setIsInlineHistoryOpen] = useState<boolean>(true);
+  // Split history view is closed by default so user can immediately use calculator
+  const [isInlineHistoryOpen, setIsInlineHistoryOpen] = useState<boolean>(false);
 
   // Touch scroll detection to prevent accidental clicks when scrolling history
   const touchStartYRef = useRef<number | null>(null);
@@ -143,8 +143,13 @@ export const Calculator: React.FC<CalculatorProps> = ({
     [currentCalculatedAmount, onDirectPaymentReceived]
   );
 
-  // Background Live Payment Polling: Checks for incoming webhook/remote payments
+  // Background Live Payment Polling: Only active on web deployment with server
   useEffect(() => {
+    // Skip in Capacitor / native APK to avoid ERR_CONNECTION_REFUSED every 2s
+    if (typeof window === 'undefined' || window.location.hostname === 'localhost' || window.location.protocol === 'file:' || window.location.protocol === 'capacitor:') {
+      return;
+    }
+
     let isMounted = true;
     const interval = setInterval(async () => {
       try {
@@ -180,7 +185,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
       } catch {
         // Polling network fallback
       }
-    }, 2500);
+    }, 4000);
 
     return () => {
       isMounted = false;
@@ -281,14 +286,13 @@ export const Calculator: React.FC<CalculatorProps> = ({
 
   const triggerFeedback = useCallback(() => {
     try {
-      if (navigator.vibrate) {
-        navigator.vibrate(10);
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(8);
       }
     } catch {
       // ignore
     }
-    playClickSound(600, 0.03);
-  }, [playClickSound]);
+  }, []);
 
   // Digits input
   const handleDigit = useCallback(
@@ -743,11 +747,11 @@ export const Calculator: React.FC<CalculatorProps> = ({
 
       {/* 2. Middle Toolbar Row: 4 Icons exactly as in Screenshot */}
       <div className="w-full">
-        <div className="py-2.5 px-1 flex items-center justify-between text-[#7e7e82]">
+        <div className="py-2 px-1 flex items-center justify-between text-[#7e7e82]">
           {/* Icon 1: Calculator Keypad Icon (when history open) OR Clock Icon (when history closed) */}
           <button
             onClick={() => setIsInlineHistoryOpen(!isInlineHistoryOpen)}
-            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-black/5 active:scale-90 transition-all text-[#7e7e82]"
+            className="w-10 h-10 flex items-center justify-center rounded-full active:bg-black/10 text-[#7e7e82]"
             title={isInlineHistoryOpen ? 'Show Keypad' : 'Show History'}
           >
             {isInlineHistoryOpen ? (
@@ -775,7 +779,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
           {/* Icon 2: Ruler (Unit Converter) */}
           <button
             onClick={onOpenConverter}
-            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-black/5 active:scale-90 transition-all text-[#7e7e82]"
+            className="w-10 h-10 flex items-center justify-center rounded-full active:bg-black/10 text-[#7e7e82]"
             title="Unit Converter"
           >
             <Ruler className="w-5 h-5 stroke-[1.75]" />
@@ -784,8 +788,8 @@ export const Calculator: React.FC<CalculatorProps> = ({
           {/* Icon 3: Scientific Function Icon (Square with √π and e=) */}
           <button
             onClick={() => setIsScientificOpen(!isScientificOpen)}
-            className={`w-10 h-10 flex items-center justify-center rounded-full active:scale-90 transition-all ${
-              isScientificOpen ? 'text-[#2ebd59] bg-[#2ebd59]/10' : 'text-[#7e7e82] hover:bg-black/5'
+            className={`w-10 h-10 flex items-center justify-center rounded-full active:bg-black/10 ${
+              isScientificOpen ? 'text-[#2ebd59] bg-[#2ebd59]/10' : 'text-[#7e7e82]'
             }`}
             title="Scientific Functions"
           >
@@ -798,7 +802,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
           {/* Icon 4: Green Backspace Icon (Outline tag with × inside) */}
           <button
             onClick={handleBackspace}
-            className="w-10 h-10 flex items-center justify-center rounded-full active:scale-90 transition-all text-[#2ebd59]"
+            className="w-10 h-10 flex items-center justify-center rounded-full active:opacity-50 text-[#2ebd59]"
             title="Backspace"
           >
             <svg
@@ -924,7 +928,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
               {/* Divide */}
               <button
                 onClick={() => handleOperator('÷')}
-                className="aspect-square w-full rounded-full active:scale-90 text-3xl sm:text-4xl font-light flex items-center justify-center transition-all bg-[#7e7e82] hover:bg-[#6c6c70] text-white"
+                className="aspect-square w-full rounded-full active:bg-[#626266] text-3xl sm:text-4xl font-light flex items-center justify-center bg-[#7e7e82] text-white"
                 title="Divide"
               >
                 ÷
@@ -933,7 +937,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
               {/* Multiply */}
               <button
                 onClick={() => handleOperator('×')}
-                className="aspect-square w-full rounded-full active:scale-90 text-3xl sm:text-4xl font-light flex items-center justify-center transition-all bg-[#7e7e82] hover:bg-[#6c6c70] text-white"
+                className="aspect-square w-full rounded-full active:bg-[#626266] text-3xl sm:text-4xl font-light flex items-center justify-center bg-[#7e7e82] text-white"
                 title="Multiply"
               >
                 ×
@@ -942,7 +946,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
               {/* Subtract */}
               <button
                 onClick={() => handleOperator('−')}
-                className="aspect-square w-full rounded-full active:scale-90 text-3xl sm:text-4xl font-light flex items-center justify-center transition-all bg-[#7e7e82] hover:bg-[#6c6c70] text-white"
+                className="aspect-square w-full rounded-full active:bg-[#626266] text-3xl sm:text-4xl font-light flex items-center justify-center bg-[#7e7e82] text-white"
                 title="Subtract"
               >
                 −
@@ -951,7 +955,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
               {/* Add */}
               <button
                 onClick={() => handleOperator('+')}
-                className="aspect-square w-full rounded-full active:scale-90 text-3xl sm:text-4xl font-light flex items-center justify-center transition-all bg-[#7e7e82] hover:bg-[#6c6c70] text-white"
+                className="aspect-square w-full rounded-full active:bg-[#626266] text-3xl sm:text-4xl font-light flex items-center justify-center bg-[#7e7e82] text-white"
                 title="Add"
               >
                 +
@@ -960,7 +964,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
               {/* Equals (Vibrant Green Circle) */}
               <button
                 onClick={handleEvaluate}
-                className="aspect-square w-full rounded-full active:scale-90 text-4xl sm:text-5xl font-light flex items-center justify-center transition-all bg-[#2ebd59] hover:bg-[#28aa4f] text-white shadow-xs"
+                className="aspect-square w-full rounded-full active:bg-[#259b48] text-4xl sm:text-5xl font-light flex items-center justify-center bg-[#2ebd59] text-white shadow-xs"
                 title="Equals"
               >
                 =
@@ -975,31 +979,31 @@ export const Calculator: React.FC<CalculatorProps> = ({
             {/* Row 1: C, ( ), %, ÷ */}
             <button
               onClick={handleClear}
-              className={`aspect-square rounded-full active:scale-90 text-2xl sm:text-3xl font-normal flex items-center justify-center transition-all ${
-                isLight ? 'bg-[#f0f0f2] hover:bg-[#e4e4e7] text-[#1c1c1e]' : 'bg-[#262628] text-white'
+              className={`aspect-square rounded-full text-2xl sm:text-3xl font-normal flex items-center justify-center ${
+                isLight ? 'bg-[#f0f0f2] active:bg-[#dcdce0] text-[#1c1c1e]' : 'bg-[#262628] active:bg-[#343438] text-white'
               }`}
             >
               C
             </button>
             <button
               onClick={handleParenthesesSmart}
-              className={`aspect-square rounded-full active:scale-90 text-2xl sm:text-3xl font-normal flex items-center justify-center transition-all ${
-                isLight ? 'bg-[#f0f0f2] hover:bg-[#e4e4e7] text-[#1c1c1e]' : 'bg-[#262628] text-white'
+              className={`aspect-square rounded-full text-2xl sm:text-3xl font-normal flex items-center justify-center ${
+                isLight ? 'bg-[#f0f0f2] active:bg-[#dcdce0] text-[#1c1c1e]' : 'bg-[#262628] active:bg-[#343438] text-white'
               }`}
             >
               ( )
             </button>
             <button
               onClick={handlePercentage}
-              className={`aspect-square rounded-full active:scale-90 text-2xl sm:text-3xl font-normal flex items-center justify-center transition-all ${
-                isLight ? 'bg-[#f0f0f2] hover:bg-[#e4e4e7] text-[#1c1c1e]' : 'bg-[#262628] text-white'
+              className={`aspect-square rounded-full text-2xl sm:text-3xl font-normal flex items-center justify-center ${
+                isLight ? 'bg-[#f0f0f2] active:bg-[#dcdce0] text-[#1c1c1e]' : 'bg-[#262628] active:bg-[#343438] text-white'
               }`}
             >
               %
             </button>
             <button
               onClick={() => handleOperator('÷')}
-              className="aspect-square rounded-full active:scale-90 text-3xl sm:text-4xl font-light flex items-center justify-center transition-all bg-[#7e7e82] hover:bg-[#6c6c70] text-white"
+              className="aspect-square rounded-full text-3xl sm:text-4xl font-light flex items-center justify-center bg-[#7e7e82] active:bg-[#626266] text-white"
             >
               ÷
             </button>
@@ -1007,31 +1011,31 @@ export const Calculator: React.FC<CalculatorProps> = ({
             {/* Row 2: 7, 8, 9, × */}
             <button
               onClick={() => handleDigit('7')}
-              className={`aspect-square rounded-full active:scale-90 text-3xl sm:text-4xl font-normal flex items-center justify-center transition-all ${
-                isLight ? 'bg-white hover:bg-stone-50 text-[#1c1c1e]' : 'bg-[#1e1e20] text-white'
+              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center ${
+                isLight ? 'bg-white active:bg-[#e4e4e8] text-[#1c1c1e]' : 'bg-[#1e1e20] active:bg-[#303034] text-white'
               }`}
             >
               7
             </button>
             <button
               onClick={() => handleDigit('8')}
-              className={`aspect-square rounded-full active:scale-90 text-3xl sm:text-4xl font-normal flex items-center justify-center transition-all ${
-                isLight ? 'bg-white hover:bg-stone-50 text-[#1c1c1e]' : 'bg-[#1e1e20] text-white'
+              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center ${
+                isLight ? 'bg-white active:bg-[#e4e4e8] text-[#1c1c1e]' : 'bg-[#1e1e20] active:bg-[#303034] text-white'
               }`}
             >
               8
             </button>
             <button
               onClick={() => handleDigit('9')}
-              className={`aspect-square rounded-full active:scale-90 text-3xl sm:text-4xl font-normal flex items-center justify-center transition-all ${
-                isLight ? 'bg-white hover:bg-stone-50 text-[#1c1c1e]' : 'bg-[#1e1e20] text-white'
+              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center ${
+                isLight ? 'bg-white active:bg-[#e4e4e8] text-[#1c1c1e]' : 'bg-[#1e1e20] active:bg-[#303034] text-white'
               }`}
             >
               9
             </button>
             <button
               onClick={() => handleOperator('×')}
-              className="aspect-square rounded-full active:scale-90 text-3xl sm:text-4xl font-light flex items-center justify-center transition-all bg-[#7e7e82] hover:bg-[#6c6c70] text-white"
+              className="aspect-square rounded-full text-3xl sm:text-4xl font-light flex items-center justify-center bg-[#7e7e82] active:bg-[#626266] text-white"
             >
               ×
             </button>
@@ -1039,31 +1043,31 @@ export const Calculator: React.FC<CalculatorProps> = ({
             {/* Row 3: 4, 5, 6, − */}
             <button
               onClick={() => handleDigit('4')}
-              className={`aspect-square rounded-full active:scale-90 text-3xl sm:text-4xl font-normal flex items-center justify-center transition-all ${
-                isLight ? 'bg-white hover:bg-stone-50 text-[#1c1c1e]' : 'bg-[#1e1e20] text-white'
+              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center ${
+                isLight ? 'bg-white active:bg-[#e4e4e8] text-[#1c1c1e]' : 'bg-[#1e1e20] active:bg-[#303034] text-white'
               }`}
             >
               4
             </button>
             <button
               onClick={() => handleDigit('5')}
-              className={`aspect-square rounded-full active:scale-90 text-3xl sm:text-4xl font-normal flex items-center justify-center transition-all ${
-                isLight ? 'bg-white hover:bg-stone-50 text-[#1c1c1e]' : 'bg-[#1e1e20] text-white'
+              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center ${
+                isLight ? 'bg-white active:bg-[#e4e4e8] text-[#1c1c1e]' : 'bg-[#1e1e20] active:bg-[#303034] text-white'
               }`}
             >
               5
             </button>
             <button
               onClick={() => handleDigit('6')}
-              className={`aspect-square rounded-full active:scale-90 text-3xl sm:text-4xl font-normal flex items-center justify-center transition-all ${
-                isLight ? 'bg-white hover:bg-stone-50 text-[#1c1c1e]' : 'bg-[#1e1e20] text-white'
+              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center ${
+                isLight ? 'bg-white active:bg-[#e4e4e8] text-[#1c1c1e]' : 'bg-[#1e1e20] active:bg-[#303034] text-white'
               }`}
             >
               6
             </button>
             <button
               onClick={() => handleOperator('−')}
-              className="aspect-square rounded-full active:scale-90 text-3xl sm:text-4xl font-light flex items-center justify-center transition-all bg-[#7e7e82] hover:bg-[#6c6c70] text-white"
+              className="aspect-square rounded-full text-3xl sm:text-4xl font-light flex items-center justify-center bg-[#7e7e82] active:bg-[#626266] text-white"
             >
               −
             </button>
@@ -1071,31 +1075,31 @@ export const Calculator: React.FC<CalculatorProps> = ({
             {/* Row 4: 1, 2, 3, + */}
             <button
               onClick={() => handleDigit('1')}
-              className={`aspect-square rounded-full active:scale-90 text-3xl sm:text-4xl font-normal flex items-center justify-center transition-all ${
-                isLight ? 'bg-white hover:bg-stone-50 text-[#1c1c1e]' : 'bg-[#1e1e20] text-white'
+              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center ${
+                isLight ? 'bg-white active:bg-[#e4e4e8] text-[#1c1c1e]' : 'bg-[#1e1e20] active:bg-[#303034] text-white'
               }`}
             >
               1
             </button>
             <button
               onClick={() => handleDigit('2')}
-              className={`aspect-square rounded-full active:scale-90 text-3xl sm:text-4xl font-normal flex items-center justify-center transition-all ${
-                isLight ? 'bg-white hover:bg-stone-50 text-[#1c1c1e]' : 'bg-[#1e1e20] text-white'
+              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center ${
+                isLight ? 'bg-white active:bg-[#e4e4e8] text-[#1c1c1e]' : 'bg-[#1e1e20] active:bg-[#303034] text-white'
               }`}
             >
               2
             </button>
             <button
               onClick={() => handleDigit('3')}
-              className={`aspect-square rounded-full active:scale-90 text-3xl sm:text-4xl font-normal flex items-center justify-center transition-all ${
-                isLight ? 'bg-white hover:bg-stone-50 text-[#1c1c1e]' : 'bg-[#1e1e20] text-white'
+              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center ${
+                isLight ? 'bg-white active:bg-[#e4e4e8] text-[#1c1c1e]' : 'bg-[#1e1e20] active:bg-[#303034] text-white'
               }`}
             >
               3
             </button>
             <button
               onClick={() => handleOperator('+')}
-              className="aspect-square rounded-full active:scale-90 text-3xl sm:text-4xl font-light flex items-center justify-center transition-all bg-[#7e7e82] hover:bg-[#6c6c70] text-white"
+              className="aspect-square rounded-full text-3xl sm:text-4xl font-light flex items-center justify-center bg-[#7e7e82] active:bg-[#626266] text-white"
             >
               +
             </button>
@@ -1103,8 +1107,8 @@ export const Calculator: React.FC<CalculatorProps> = ({
             {/* Row 5: GPay QR, 0, ., = */}
             <button
               onClick={handleTriggerUpiQr}
-              className={`aspect-square rounded-full active:scale-90 flex flex-col items-center justify-center transition-all ${
-                isLight ? 'bg-blue-50/70 hover:bg-blue-100 text-blue-700' : 'bg-[#1e1e20] text-blue-400'
+              className={`aspect-square rounded-full flex flex-col items-center justify-center ${
+                isLight ? 'bg-blue-50/70 active:bg-blue-100 text-blue-700' : 'bg-[#1e1e20] active:bg-[#2c2c30] text-blue-400'
               }`}
               title="Google Pay for Business QR"
             >
@@ -1113,23 +1117,23 @@ export const Calculator: React.FC<CalculatorProps> = ({
             </button>
             <button
               onClick={() => handleDigit('0')}
-              className={`aspect-square rounded-full active:scale-90 text-3xl sm:text-4xl font-normal flex items-center justify-center transition-all ${
-                isLight ? 'bg-white hover:bg-stone-50 text-[#1c1c1e]' : 'bg-[#1e1e20] text-white'
+              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center ${
+                isLight ? 'bg-white active:bg-[#e4e4e8] text-[#1c1c1e]' : 'bg-[#1e1e20] active:bg-[#303034] text-white'
               }`}
             >
               0
             </button>
             <button
               onClick={() => handleDigit('.')}
-              className={`aspect-square rounded-full active:scale-90 text-3xl sm:text-4xl font-bold flex items-center justify-center transition-all ${
-                isLight ? 'bg-white hover:bg-stone-50 text-[#1c1c1e]' : 'bg-[#1e1e20] text-white'
+              className={`aspect-square rounded-full text-3xl sm:text-4xl font-bold flex items-center justify-center ${
+                isLight ? 'bg-white active:bg-[#e4e4e8] text-[#1c1c1e]' : 'bg-[#1e1e20] active:bg-[#303034] text-white'
               }`}
             >
               .
             </button>
             <button
               onClick={handleEvaluate}
-              className="aspect-square rounded-full active:scale-90 text-4xl sm:text-5xl font-light flex items-center justify-center transition-all bg-[#2ebd59] hover:bg-[#28aa4f] text-white shadow-xs"
+              className="aspect-square rounded-full text-4xl sm:text-5xl font-light flex items-center justify-center bg-[#2ebd59] active:bg-[#259b48] text-white shadow-xs"
             >
               =
             </button>
