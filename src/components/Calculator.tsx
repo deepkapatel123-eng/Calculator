@@ -17,10 +17,12 @@ import {
   X,
   ShieldCheck,
   Check,
+  Edit3,
 } from 'lucide-react';
 import { evaluateExpression, formatIndianNumber } from '../utils/calculatorEngine';
 import { HistoryItem, PaymentTransaction } from '../types';
 import { playGooglePaySoundbox } from '../utils/soundbox';
+import { CheckAndCorrectModal } from './CheckAndCorrectModal';
 
 interface CalculatorProps {
   onAddHistory: (item: Omit<HistoryItem, 'id' | 'timestamp'>) => void;
@@ -57,6 +59,12 @@ export const Calculator: React.FC<CalculatorProps> = ({
   const [equation, setEquation] = useState<string>('0');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isScientificOpen, setIsScientificOpen] = useState<boolean>(false);
+
+  // Active cursor index for middle-of-equation corrections (null means at the end)
+  const [cursorIndex, setCursorIndex] = useState<number | null>(null);
+
+  // Check & Correct step-by-step modal
+  const [isCorrectModalOpen, setIsCorrectModalOpen] = useState<boolean>(false);
 
   // Split history view is closed by default so user can immediately use calculator
   const [isInlineHistoryOpen, setIsInlineHistoryOpen] = useState<boolean>(false);
@@ -294,46 +302,87 @@ export const Calculator: React.FC<CalculatorProps> = ({
     }
   }, []);
 
-  // Digits input
+  // Cursor navigation functions
+  const moveCursorLeft = useCallback(() => {
+    triggerFeedback();
+    setCursorIndex((prev) => {
+      const cur = prev === null ? equation.length : prev;
+      return Math.max(0, cur - 1);
+    });
+  }, [equation.length, triggerFeedback]);
+
+  const moveCursorRight = useCallback(() => {
+    triggerFeedback();
+    setCursorIndex((prev) => {
+      if (prev === null) return equation.length;
+      return Math.min(equation.length, prev + 1);
+    });
+  }, [equation.length, triggerFeedback]);
+
+  const resetCursorToEnd = useCallback(() => {
+    triggerFeedback();
+    setCursorIndex(null);
+  }, [triggerFeedback]);
+
+  // Digits input with cursor position support
   const handleDigit = useCallback(
     (digit: string) => {
       triggerFeedback();
       setErrorMessage(null);
 
       setEquation((prev) => {
-        if (prev === '0' && digit !== '.') {
+        const cur = cursorIndex === null || cursorIndex > prev.length ? prev.length : cursorIndex;
+        if (prev === '0' && digit !== '.' && cur <= 1) {
+          setCursorIndex(1);
           return digit;
         }
         if (digit === '.') {
-          const lastNumChunk = prev.split(/[+\−\×\÷\*\/\-\^%()]/).pop() || '';
+          const before = prev.slice(0, cur);
+          const after = prev.slice(cur);
+          const lastNumChunk = before.split(/[+\−\×\÷\*\/\-\^%()]/).pop() || '';
           if (lastNumChunk.includes('.')) return prev;
-          if (lastNumChunk === '') return prev + '0.';
-          return prev + '.';
+          if (lastNumChunk === '') {
+            setCursorIndex(cur + 2);
+            return before + '0.' + after;
+          }
+          setCursorIndex(cur + 1);
+          return before + '.' + after;
         }
-        return prev + digit;
+        const before = prev.slice(0, cur);
+        const after = prev.slice(cur);
+        setCursorIndex(cur + digit.length);
+        return before + digit + after;
       });
     },
-    [triggerFeedback]
+    [cursorIndex, triggerFeedback]
   );
 
-  // Operators (+, −, ×, ÷)
+  // Operators (+, −, ×, ÷) with cursor position support
   const handleOperator = useCallback(
     (op: string) => {
       triggerFeedback();
       setErrorMessage(null);
 
       setEquation((prev) => {
+        const cur = cursorIndex === null || cursorIndex > prev.length ? prev.length : cursorIndex;
         if (!prev || prev === '0') {
+          setCursorIndex(2);
           return '0' + op;
         }
-        // If last character is already an operator, replace it
-        if (/[+\−\×\÷\*\/\-\^]/.test(prev.slice(-1))) {
-          return prev.slice(0, -1) + op;
+        const before = prev.slice(0, cur);
+        const after = prev.slice(cur);
+        // If character immediately preceding cursor is an operator, replace it
+        if (before.length > 0 && /[+\−\×\÷\*\/\-\^]/.test(before.slice(-1))) {
+          const nextEq = before.slice(0, -1) + op + after;
+          setCursorIndex(cur);
+          return nextEq;
         }
-        return prev + op;
+        const nextEq = before + op + after;
+        setCursorIndex(cur + op.length);
+        return nextEq;
       });
     },
-    [triggerFeedback]
+    [cursorIndex, triggerFeedback]
   );
 
   // Parentheses
@@ -342,20 +391,28 @@ export const Calculator: React.FC<CalculatorProps> = ({
     setErrorMessage(null);
 
     setEquation((prev) => {
-      if (prev === '0') return '(';
-      const openCount = (prev.match(/\(/g) || []).length;
-      const closeCount = (prev.match(/\)/g) || []).length;
-      const lastChar = prev.slice(-1);
+      const cur = cursorIndex === null || cursorIndex > prev.length ? prev.length : cursorIndex;
+      const before = prev.slice(0, cur);
+      const after = prev.slice(cur);
 
-      if (openCount > closeCount && /[0-9)]/.test(lastChar)) {
-        return prev + ')';
-      } else if (/[0-9)]/.test(lastChar)) {
-        return prev + '×(';
-      } else {
-        return prev + '(';
+      if (prev === '0') {
+        setCursorIndex(1);
+        return '(';
       }
+      const openCount = (before.match(/\(/g) || []).length;
+      const closeCount = (before.match(/\)/g) || []).length;
+      const lastChar = before.slice(-1);
+
+      let toInsert = '(';
+      if (openCount > closeCount && /[0-9)]/.test(lastChar)) {
+        toInsert = ')';
+      } else if (/[0-9)]/.test(lastChar)) {
+        toInsert = '×(';
+      }
+      setCursorIndex(cur + toInsert.length);
+      return before + toInsert + after;
     });
-  }, [triggerFeedback]);
+  }, [cursorIndex, triggerFeedback]);
 
   // Percentage
   const handlePercentage = useCallback(() => {
@@ -364,34 +421,47 @@ export const Calculator: React.FC<CalculatorProps> = ({
 
     setEquation((prev) => {
       if (!prev || prev === '0') return '0';
-      if (/[+\−\×\÷\*\/\-\^%]/.test(prev.slice(-1))) return prev;
-      return prev + '%';
+      const cur = cursorIndex === null || cursorIndex > prev.length ? prev.length : cursorIndex;
+      const before = prev.slice(0, cur);
+      const after = prev.slice(cur);
+      if (before.length === 0 || /[+\−\×\÷\*\/\-\^%]/.test(before.slice(-1))) return prev;
+      setCursorIndex(cur + 1);
+      return before + '%' + after;
     });
-  }, [triggerFeedback]);
+  }, [cursorIndex, triggerFeedback]);
 
-  // Backspace (Green tag icon in toolbar)
+  // Backspace (deletes character right before cursor)
   const handleBackspace = useCallback(() => {
     triggerFeedback();
     setErrorMessage(null);
 
     setEquation((prev) => {
       if (prev.length <= 1) {
+        setCursorIndex(null);
         return '0';
       }
-      return prev.slice(0, -1);
+      const cur = cursorIndex === null || cursorIndex > prev.length ? prev.length : cursorIndex;
+      if (cur <= 0) return prev; // At start of equation, nothing to backspace
+      const before = prev.slice(0, cur - 1);
+      const after = prev.slice(cur);
+      const nextEq = before + after;
+      setCursorIndex(cur - 1);
+      return nextEq.length === 0 ? '0' : nextEq;
     });
-  }, [triggerFeedback]);
+  }, [cursorIndex, triggerFeedback]);
 
   // Clear all (C button)
   const handleClear = useCallback(() => {
     triggerFeedback();
     setEquation('0');
+    setCursorIndex(null);
     setErrorMessage(null);
   }, [triggerFeedback]);
 
   // Equals / Calculate (= button)
   const handleEvaluate = useCallback(() => {
     triggerFeedback();
+    setCursorIndex(null);
     if (!equation || equation === '0') return;
 
     let evalStr = equation;
@@ -527,41 +597,59 @@ export const Calculator: React.FC<CalculatorProps> = ({
   }
 
   // Render the equation with vibrant green operators matching the screenshot
+  // Render the equation with interactive cursor positioning
   const renderFormattedEquation = (eqStr: string) => {
     if (!eqStr || eqStr === '0') {
       return (
-        <span className="inline-flex items-center">
+        <span
+          onClick={() => setCursorIndex(null)}
+          className="inline-flex items-center cursor-pointer"
+        >
           <span>0</span>
         </span>
       );
     }
 
-    const regex = /(\d+\.?\d*|[+\−\×\÷\*\/\-\^%()])/g;
-    const tokens = eqStr.match(regex) || [eqStr];
+    const cur = cursorIndex === null || cursorIndex > eqStr.length ? eqStr.length : cursorIndex;
+    const chars = eqStr.split('');
 
     return (
-      <span className="inline-flex items-center justify-end whitespace-nowrap">
-        {tokens.map((token, idx) => {
-          if (/^\d+\.?\d*$/.test(token)) {
-            return (
-              <span key={idx} className={isLight ? 'text-[#222222]' : 'text-white'}>
-                {formatIndianNumber(token)}
+      <span className="inline-flex items-center justify-end whitespace-nowrap select-none">
+        {/* Cursor at very start (index 0) */}
+        {cur === 0 && (
+          <span className="w-[3px] h-8 sm:h-10 bg-[#2ebd59] inline-block mr-0.5 rounded-full animate-pulse align-middle shrink-0" />
+        )}
+
+        {chars.map((ch, idx) => {
+          const isOp = ['+', '−', '×', '÷', '-', '*', '/'].includes(ch);
+          const displayChar = ch === '*' ? '×' : ch === '/' ? '÷' : ch === '-' ? '−' : ch;
+          const isCursorHere = cur === idx + 1;
+
+          return (
+            <React.Fragment key={idx}>
+              <span
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCursorIndex(idx + 1);
+                }}
+                className={`cursor-pointer hover:opacity-80 active:bg-emerald-500/20 rounded px-0.5 transition-colors ${
+                  isOp
+                    ? 'text-[#2ebd59] font-normal mx-0.5'
+                    : isLight
+                    ? 'text-[#222222]'
+                    : 'text-white'
+                }`}
+                title="આ જગ્યાએ સુધારો કરવા ટચ કરો"
+              >
+                {displayChar}
               </span>
-            );
-          } else if (['+', '−', '×', '÷', '-', '*', '/'].includes(token)) {
-            const displayOp = token === '*' ? '×' : token === '/' ? '÷' : token === '-' ? '−' : token;
-            return (
-              <span key={idx} className="text-[#2ebd59] font-normal mx-0.5">
-                {displayOp}
-              </span>
-            );
-          } else {
-            return (
-              <span key={idx} className={isLight ? 'text-[#7e7e82]' : 'text-stone-400'}>
-                {token}
-              </span>
-            );
-          }
+
+              {/* Cursor at this position */}
+              {isCursorHere && (
+                <span className="w-[3px] h-8 sm:h-10 bg-[#2ebd59] inline-block mx-0.5 rounded-full animate-pulse align-middle shrink-0" />
+              )}
+            </React.Fragment>
+          );
         })}
       </span>
     );
@@ -744,59 +832,123 @@ export const Calculator: React.FC<CalculatorProps> = ({
         )}
       </div>
 
-      {/* 2. Middle Toolbar Row: 4 Icons exactly as in Screenshot */}
+      {/* 2. Middle Toolbar Row: 4 Icons + Check & Correct */}
       <div className="w-full">
-        <div className="py-2 px-1 flex items-center justify-between text-[#7e7e82]">
-          {/* Icon 1: Calculator Keypad Icon (when history open) OR Clock Icon (when history closed) */}
-          <button
-            onClick={() => setIsInlineHistoryOpen(!isInlineHistoryOpen)}
-            className="w-10 h-10 flex items-center justify-center rounded-full active:bg-black/10 text-[#7e7e82]"
-            title={isInlineHistoryOpen ? 'Show Keypad' : 'Show History'}
-          >
-            {isInlineHistoryOpen ? (
-              /* EXACT Calculator Keypad Icon from screenshot */
-              <div className="w-[20px] h-[20px] border-[1.75px] border-[#7e7e82] rounded-[4px] p-[2.5px] flex flex-col justify-between">
-                <div className="w-full h-[3px] bg-[#7e7e82] rounded-[1px]" />
-                <div className="grid grid-cols-3 gap-[2px] w-full pt-[1.5px]">
-                  <div className="w-[2.5px] h-[2.5px] bg-[#7e7e82] rounded-full" />
-                  <div className="w-[2.5px] h-[2.5px] bg-[#7e7e82] rounded-full" />
-                  <div className="w-[2.5px] h-[2.5px] bg-[#7e7e82] rounded-full" />
-                  <div className="w-[2.5px] h-[2.5px] bg-[#7e7e82] rounded-full" />
-                  <div className="w-[2.5px] h-[2.5px] bg-[#7e7e82] rounded-full" />
-                  <div className="w-[2.5px] h-[2.5px] bg-[#7e7e82] rounded-full" />
-                </div>
-              </div>
-            ) : (
-              /* Clock Icon */
-              <svg className="w-6 h-6 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-            )}
-          </button>
-
-          {/* Icon 2: Ruler (Unit Converter) */}
-          <button
-            onClick={onOpenConverter}
-            className="w-10 h-10 flex items-center justify-center rounded-full active:bg-black/10 text-[#7e7e82]"
-            title="Unit Converter"
-          >
-            <Ruler className="w-5 h-5 stroke-[1.75]" />
-          </button>
-
-          {/* Icon 3: Scientific Function Icon (Square with √π and e=) */}
-          <button
-            onClick={() => setIsScientificOpen(!isScientificOpen)}
-            className={`w-10 h-10 flex items-center justify-center rounded-full active:bg-black/10 ${
-              isScientificOpen ? 'text-[#2ebd59] bg-[#2ebd59]/10' : 'text-[#7e7e82]'
-            }`}
-            title="Scientific Functions"
-          >
-            <div className="w-[22px] h-[22px] border-[1.75px] border-current rounded-[4.5px] flex flex-col items-center justify-center text-[7px] font-mono leading-none font-bold">
-              <span>√π</span>
-              <span className="mt-[1px]">e=</span>
+        {/* Helper bar shown when cursor is positioned in the middle of calculation */}
+        {cursorIndex !== null && cursorIndex < equation.length && (
+          <div className="flex items-center justify-between px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-950/50 rounded-xl mb-1.5 border border-emerald-200 dark:border-emerald-800 text-xs animate-in fade-in">
+            <div className="flex items-center gap-1 font-bold text-emerald-800 dark:text-emerald-300">
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>વચ્ચે સુધારો (જગ્યા: {cursorIndex}/{equation.length})</span>
             </div>
-          </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  moveCursorLeft();
+                }}
+                className="px-2 py-1 rounded-lg bg-white dark:bg-stone-800 shadow-xs active:bg-stone-200 text-stone-700 dark:text-stone-200 font-bold text-[11px]"
+                title="ડાબે ખસો"
+              >
+                ◀ ડાબે
+              </button>
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  moveCursorRight();
+                }}
+                className="px-2 py-1 rounded-lg bg-white dark:bg-stone-800 shadow-xs active:bg-stone-200 text-stone-700 dark:text-stone-200 font-bold text-[11px]"
+                title="જમણે ખસો"
+              >
+                જમણે ▶
+              </button>
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  resetCursorToEnd();
+                }}
+                className="px-2.5 py-1 rounded-lg bg-emerald-600 active:bg-emerald-700 text-white font-bold text-[11px] shadow-xs"
+                title="છેડે જાઓ"
+              >
+                છેડે જાઓ ⇥
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="py-2 px-1 flex items-center justify-between text-[#7e7e82]">
+          <div className="flex items-center gap-1">
+            {/* Icon 1: Calculator Keypad Icon (when history open) OR Clock Icon (when history closed) */}
+            <button
+              onClick={() => setIsInlineHistoryOpen(!isInlineHistoryOpen)}
+              className="w-10 h-10 flex items-center justify-center rounded-full active:bg-black/10 text-[#7e7e82]"
+              title={isInlineHistoryOpen ? 'Show Keypad' : 'Show History'}
+            >
+              {isInlineHistoryOpen ? (
+                /* EXACT Calculator Keypad Icon from screenshot */
+                <div className="w-[20px] h-[20px] border-[1.75px] border-[#7e7e82] rounded-[4px] p-[2.5px] flex flex-col justify-between">
+                  <div className="w-full h-[3px] bg-[#7e7e82] rounded-[1px]" />
+                  <div className="grid grid-cols-3 gap-[2px] w-full pt-[1.5px]">
+                    <div className="w-[2.5px] h-[2.5px] bg-[#7e7e82] rounded-full" />
+                    <div className="w-[2.5px] h-[2.5px] bg-[#7e7e82] rounded-full" />
+                    <div className="w-[2.5px] h-[2.5px] bg-[#7e7e82] rounded-full" />
+                    <div className="w-[2.5px] h-[2.5px] bg-[#7e7e82] rounded-full" />
+                    <div className="w-[2.5px] h-[2.5px] bg-[#7e7e82] rounded-full" />
+                    <div className="w-[2.5px] h-[2.5px] bg-[#7e7e82] rounded-full" />
+                  </div>
+                </div>
+              ) : (
+                /* Clock Icon */
+                <svg className="w-6 h-6 stroke-[1.75]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+              )}
+            </button>
+
+            {/* Icon 2: Ruler (Unit Converter) */}
+            <button
+              onClick={onOpenConverter}
+              className="w-10 h-10 flex items-center justify-center rounded-full active:bg-black/10 text-[#7e7e82]"
+              title="Unit Converter"
+            >
+              <Ruler className="w-5 h-5 stroke-[1.75]" />
+            </button>
+
+            {/* Icon 3: Scientific Function Icon (Square with √π and e=) */}
+            <button
+              onClick={() => setIsScientificOpen(!isScientificOpen)}
+              className={`w-10 h-10 flex items-center justify-center rounded-full active:bg-black/10 ${
+                isScientificOpen ? 'text-[#2ebd59] bg-[#2ebd59]/10' : 'text-[#7e7e82]'
+              }`}
+              title="Scientific Functions"
+            >
+              <div className="w-[22px] h-[22px] border-[1.75px] border-current rounded-[4.5px] flex flex-col items-center justify-center text-[7px] font-mono leading-none font-bold">
+                <span>√π</span>
+                <span className="mt-[1px]">e=</span>
+              </div>
+            </button>
+          </div>
+
+          {/* Middle: Prominent "ભૂલ સુધારો (Check & Correct)" button */}
+          {equation !== '0' && (
+            <button
+              type="button"
+              onClick={() => setIsCorrectModalOpen(true)}
+              className={`px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-bold transition-all shadow-xs ${
+                isLight
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 hover:bg-emerald-100 active:bg-emerald-200'
+                  : 'bg-emerald-950/70 text-emerald-300 border border-emerald-700 hover:bg-emerald-900 active:bg-emerald-800'
+              }`}
+              title="વચ્ચે ભૂલ સુધારો (Check & Correct)"
+            >
+              <Edit3 className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>ભૂલ સુધારો</span>
+            </button>
+          )}
 
           {/* Icon 4: Green Backspace Icon (Outline tag with × inside) */}
           <button
@@ -1194,6 +1346,19 @@ export const Calculator: React.FC<CalculatorProps> = ({
           </>
         )}
       </div>
+
+      {/* Check & Correct Step-by-Step Modal */}
+      <CheckAndCorrectModal
+        isOpen={isCorrectModalOpen}
+        onClose={() => setIsCorrectModalOpen(false)}
+        equation={equation}
+        onApplyEquation={(newEq) => {
+          setEquation(newEq);
+          setCursorIndex(null);
+          setErrorMessage(null);
+        }}
+        theme={theme}
+      />
     </div>
   );
 };
