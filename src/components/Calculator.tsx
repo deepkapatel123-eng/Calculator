@@ -532,7 +532,6 @@ export const Calculator: React.FC<CalculatorProps> = ({
       return (
         <span className="inline-flex items-center">
           <span>0</span>
-          <span className="w-[3px] h-10 sm:h-12 bg-[#2ebd59] inline-block ml-1 rounded-full animate-pulse shrink-0 align-middle" />
         </span>
       );
     }
@@ -541,7 +540,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
     const tokens = eqStr.match(regex) || [eqStr];
 
     return (
-      <span className="inline-flex items-center flex-wrap justify-end">
+      <span className="inline-flex items-center justify-end whitespace-nowrap">
         {tokens.map((token, idx) => {
           if (/^\d+\.?\d*$/.test(token)) {
             return (
@@ -801,8 +800,13 @@ export const Calculator: React.FC<CalculatorProps> = ({
 
           {/* Icon 4: Green Backspace Icon (Outline tag with × inside) */}
           <button
-            onClick={handleBackspace}
-            className="w-10 h-10 flex items-center justify-center rounded-full active:opacity-50 text-[#2ebd59]"
+            type="button"
+            onPointerDown={(e) => {
+              e.preventDefault();
+              handleBackspace();
+            }}
+            onClick={(e) => e.preventDefault()}
+            className="w-10 h-10 flex items-center justify-center rounded-full active:opacity-50 text-[#2ebd59] touch-none select-none"
             title="Backspace"
           >
             <svg
@@ -924,11 +928,13 @@ export const Calculator: React.FC<CalculatorProps> = ({
             </div>
 
             {/* Right 1 Column: Exactly 5 Vertically Stacked Round Buttons (÷, ×, −, +, =) */}
-            <div className="col-span-1 flex flex-col justify-between h-[380px] sm:h-[420px]">
+            <div className="col-span-1 flex flex-col justify-between h-[380px] sm:h-[420px] touch-none select-none">
               {/* Divide */}
               <button
-                onClick={() => handleOperator('÷')}
-                className="aspect-square w-full rounded-full active:bg-[#626266] text-3xl sm:text-4xl font-light flex items-center justify-center bg-[#7e7e82] text-white"
+                type="button"
+                onPointerDown={(e) => { e.preventDefault(); handleOperator('÷'); }}
+                onClick={(e) => e.preventDefault()}
+                className="aspect-square w-full rounded-full active:bg-[#626266] text-3xl sm:text-4xl font-light flex items-center justify-center bg-[#7e7e82] text-white touch-none select-none"
                 title="Divide"
               >
                 ÷
@@ -936,8 +942,10 @@ export const Calculator: React.FC<CalculatorProps> = ({
 
               {/* Multiply */}
               <button
-                onClick={() => handleOperator('×')}
-                className="aspect-square w-full rounded-full active:bg-[#626266] text-3xl sm:text-4xl font-light flex items-center justify-center bg-[#7e7e82] text-white"
+                type="button"
+                onPointerDown={(e) => { e.preventDefault(); handleOperator('×'); }}
+                onClick={(e) => e.preventDefault()}
+                className="aspect-square w-full rounded-full active:bg-[#626266] text-3xl sm:text-4xl font-light flex items-center justify-center bg-[#7e7e82] text-white touch-none select-none"
                 title="Multiply"
               >
                 ×
@@ -945,8 +953,10 @@ export const Calculator: React.FC<CalculatorProps> = ({
 
               {/* Subtract */}
               <button
-                onClick={() => handleOperator('−')}
-                className="aspect-square w-full rounded-full active:bg-[#626266] text-3xl sm:text-4xl font-light flex items-center justify-center bg-[#7e7e82] text-white"
+                type="button"
+                onPointerDown={(e) => { e.preventDefault(); handleOperator('−'); }}
+                onClick={(e) => e.preventDefault()}
+                className="aspect-square w-full rounded-full active:bg-[#626266] text-3xl sm:text-4xl font-light flex items-center justify-center bg-[#7e7e82] text-white touch-none select-none"
                 title="Subtract"
               >
                 −
@@ -954,8 +964,10 @@ export const Calculator: React.FC<CalculatorProps> = ({
 
               {/* Add */}
               <button
-                onClick={() => handleOperator('+')}
-                className="aspect-square w-full rounded-full active:bg-[#626266] text-3xl sm:text-4xl font-light flex items-center justify-center bg-[#7e7e82] text-white"
+                type="button"
+                onPointerDown={(e) => { e.preventDefault(); handleOperator('+'); }}
+                onClick={(e) => e.preventDefault()}
+                className="aspect-square w-full rounded-full active:bg-[#626266] text-3xl sm:text-4xl font-light flex items-center justify-center bg-[#7e7e82] text-white touch-none select-none"
                 title="Add"
               >
                 +
@@ -963,8 +975,10 @@ export const Calculator: React.FC<CalculatorProps> = ({
 
               {/* Equals (Vibrant Green Circle) */}
               <button
-                onClick={handleEvaluate}
-                className="aspect-square w-full rounded-full active:bg-[#259b48] text-4xl sm:text-5xl font-light flex items-center justify-center bg-[#2ebd59] text-white shadow-xs"
+                type="button"
+                onPointerDown={(e) => { e.preventDefault(); handleEvaluate(); }}
+                onClick={(e) => e.preventDefault()}
+                className="aspect-square w-full rounded-full active:bg-[#259b48] text-4xl sm:text-5xl font-light flex items-center justify-center bg-[#2ebd59] text-white shadow-xs touch-none select-none"
                 title="Equals"
               >
                 =
@@ -973,141 +987,175 @@ export const Calculator: React.FC<CalculatorProps> = ({
           </>
         ) : (
           /* ========================================================================= */
-          /* NORMAL NUMERIC KEYPAD VIEW                                                */
+          /* NORMAL NUMERIC KEYPAD VIEW - 0MS INSTANT TOUCH DOWN                       */
           /* ========================================================================= */
           <>
             {/* Row 1: C, ( ), %, ÷ */}
             <button
-              onClick={handleClear}
-              className={`aspect-square rounded-full text-2xl sm:text-3xl font-normal flex items-center justify-center ${
+              type="button"
+              onPointerDown={(e) => { e.preventDefault(); handleClear(); }}
+              onClick={(e) => e.preventDefault()}
+              className={`aspect-square rounded-full text-2xl sm:text-3xl font-normal flex items-center justify-center touch-none select-none ${
                 isLight ? 'bg-[#f0f0f2] active:bg-[#dcdce0] text-[#1c1c1e]' : 'bg-[#262628] active:bg-[#343438] text-white'
               }`}
             >
               C
             </button>
             <button
-              onClick={handleParenthesesSmart}
-              className={`aspect-square rounded-full text-2xl sm:text-3xl font-normal flex items-center justify-center ${
+              type="button"
+              onPointerDown={(e) => { e.preventDefault(); handleParenthesesSmart(); }}
+              onClick={(e) => e.preventDefault()}
+              className={`aspect-square rounded-full text-2xl sm:text-3xl font-normal flex items-center justify-center touch-none select-none ${
                 isLight ? 'bg-[#f0f0f2] active:bg-[#dcdce0] text-[#1c1c1e]' : 'bg-[#262628] active:bg-[#343438] text-white'
               }`}
             >
               ( )
             </button>
             <button
-              onClick={handlePercentage}
-              className={`aspect-square rounded-full text-2xl sm:text-3xl font-normal flex items-center justify-center ${
+              type="button"
+              onPointerDown={(e) => { e.preventDefault(); handlePercentage(); }}
+              onClick={(e) => e.preventDefault()}
+              className={`aspect-square rounded-full text-2xl sm:text-3xl font-normal flex items-center justify-center touch-none select-none ${
                 isLight ? 'bg-[#f0f0f2] active:bg-[#dcdce0] text-[#1c1c1e]' : 'bg-[#262628] active:bg-[#343438] text-white'
               }`}
             >
               %
             </button>
             <button
-              onClick={() => handleOperator('÷')}
-              className="aspect-square rounded-full text-3xl sm:text-4xl font-light flex items-center justify-center bg-[#7e7e82] active:bg-[#626266] text-white"
+              type="button"
+              onPointerDown={(e) => { e.preventDefault(); handleOperator('÷'); }}
+              onClick={(e) => e.preventDefault()}
+              className="aspect-square rounded-full text-3xl sm:text-4xl font-light flex items-center justify-center bg-[#7e7e82] active:bg-[#626266] text-white touch-none select-none"
             >
               ÷
             </button>
 
             {/* Row 2: 7, 8, 9, × */}
             <button
-              onClick={() => handleDigit('7')}
-              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center ${
+              type="button"
+              onPointerDown={(e) => { e.preventDefault(); handleDigit('7'); }}
+              onClick={(e) => e.preventDefault()}
+              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center touch-none select-none ${
                 isLight ? 'bg-white active:bg-[#e4e4e8] text-[#1c1c1e]' : 'bg-[#1e1e20] active:bg-[#303034] text-white'
               }`}
             >
               7
             </button>
             <button
-              onClick={() => handleDigit('8')}
-              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center ${
+              type="button"
+              onPointerDown={(e) => { e.preventDefault(); handleDigit('8'); }}
+              onClick={(e) => e.preventDefault()}
+              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center touch-none select-none ${
                 isLight ? 'bg-white active:bg-[#e4e4e8] text-[#1c1c1e]' : 'bg-[#1e1e20] active:bg-[#303034] text-white'
               }`}
             >
               8
             </button>
             <button
-              onClick={() => handleDigit('9')}
-              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center ${
+              type="button"
+              onPointerDown={(e) => { e.preventDefault(); handleDigit('9'); }}
+              onClick={(e) => e.preventDefault()}
+              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center touch-none select-none ${
                 isLight ? 'bg-white active:bg-[#e4e4e8] text-[#1c1c1e]' : 'bg-[#1e1e20] active:bg-[#303034] text-white'
               }`}
             >
               9
             </button>
             <button
-              onClick={() => handleOperator('×')}
-              className="aspect-square rounded-full text-3xl sm:text-4xl font-light flex items-center justify-center bg-[#7e7e82] active:bg-[#626266] text-white"
+              type="button"
+              onPointerDown={(e) => { e.preventDefault(); handleOperator('×'); }}
+              onClick={(e) => e.preventDefault()}
+              className="aspect-square rounded-full text-3xl sm:text-4xl font-light flex items-center justify-center bg-[#7e7e82] active:bg-[#626266] text-white touch-none select-none"
             >
               ×
             </button>
 
             {/* Row 3: 4, 5, 6, − */}
             <button
-              onClick={() => handleDigit('4')}
-              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center ${
+              type="button"
+              onPointerDown={(e) => { e.preventDefault(); handleDigit('4'); }}
+              onClick={(e) => e.preventDefault()}
+              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center touch-none select-none ${
                 isLight ? 'bg-white active:bg-[#e4e4e8] text-[#1c1c1e]' : 'bg-[#1e1e20] active:bg-[#303034] text-white'
               }`}
             >
               4
             </button>
             <button
-              onClick={() => handleDigit('5')}
-              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center ${
+              type="button"
+              onPointerDown={(e) => { e.preventDefault(); handleDigit('5'); }}
+              onClick={(e) => e.preventDefault()}
+              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center touch-none select-none ${
                 isLight ? 'bg-white active:bg-[#e4e4e8] text-[#1c1c1e]' : 'bg-[#1e1e20] active:bg-[#303034] text-white'
               }`}
             >
               5
             </button>
             <button
-              onClick={() => handleDigit('6')}
-              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center ${
+              type="button"
+              onPointerDown={(e) => { e.preventDefault(); handleDigit('6'); }}
+              onClick={(e) => e.preventDefault()}
+              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center touch-none select-none ${
                 isLight ? 'bg-white active:bg-[#e4e4e8] text-[#1c1c1e]' : 'bg-[#1e1e20] active:bg-[#303034] text-white'
               }`}
             >
               6
             </button>
             <button
-              onClick={() => handleOperator('−')}
-              className="aspect-square rounded-full text-3xl sm:text-4xl font-light flex items-center justify-center bg-[#7e7e82] active:bg-[#626266] text-white"
+              type="button"
+              onPointerDown={(e) => { e.preventDefault(); handleOperator('−'); }}
+              onClick={(e) => e.preventDefault()}
+              className="aspect-square rounded-full text-3xl sm:text-4xl font-light flex items-center justify-center bg-[#7e7e82] active:bg-[#626266] text-white touch-none select-none"
             >
               −
             </button>
 
             {/* Row 4: 1, 2, 3, + */}
             <button
-              onClick={() => handleDigit('1')}
-              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center ${
+              type="button"
+              onPointerDown={(e) => { e.preventDefault(); handleDigit('1'); }}
+              onClick={(e) => e.preventDefault()}
+              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center touch-none select-none ${
                 isLight ? 'bg-white active:bg-[#e4e4e8] text-[#1c1c1e]' : 'bg-[#1e1e20] active:bg-[#303034] text-white'
               }`}
             >
               1
             </button>
             <button
-              onClick={() => handleDigit('2')}
-              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center ${
+              type="button"
+              onPointerDown={(e) => { e.preventDefault(); handleDigit('2'); }}
+              onClick={(e) => e.preventDefault()}
+              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center touch-none select-none ${
                 isLight ? 'bg-white active:bg-[#e4e4e8] text-[#1c1c1e]' : 'bg-[#1e1e20] active:bg-[#303034] text-white'
               }`}
             >
               2
             </button>
             <button
-              onClick={() => handleDigit('3')}
-              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center ${
+              type="button"
+              onPointerDown={(e) => { e.preventDefault(); handleDigit('3'); }}
+              onClick={(e) => e.preventDefault()}
+              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center touch-none select-none ${
                 isLight ? 'bg-white active:bg-[#e4e4e8] text-[#1c1c1e]' : 'bg-[#1e1e20] active:bg-[#303034] text-white'
               }`}
             >
               3
             </button>
             <button
-              onClick={() => handleOperator('+')}
-              className="aspect-square rounded-full text-3xl sm:text-4xl font-light flex items-center justify-center bg-[#7e7e82] active:bg-[#626266] text-white"
+              type="button"
+              onPointerDown={(e) => { e.preventDefault(); handleOperator('+'); }}
+              onClick={(e) => e.preventDefault()}
+              className="aspect-square rounded-full text-3xl sm:text-4xl font-light flex items-center justify-center bg-[#7e7e82] active:bg-[#626266] text-white touch-none select-none"
             >
               +
             </button>
 
             {/* Row 5: GPay QR, 0, ., = */}
             <button
-              onClick={handleTriggerUpiQr}
-              className={`aspect-square rounded-full flex flex-col items-center justify-center ${
+              type="button"
+              onPointerDown={(e) => { e.preventDefault(); handleTriggerUpiQr(); }}
+              onClick={(e) => e.preventDefault()}
+              className={`aspect-square rounded-full flex flex-col items-center justify-center touch-none select-none ${
                 isLight ? 'bg-blue-50/70 active:bg-blue-100 text-blue-700' : 'bg-[#1e1e20] active:bg-[#2c2c30] text-blue-400'
               }`}
               title="Google Pay for Business QR"
@@ -1116,24 +1164,30 @@ export const Calculator: React.FC<CalculatorProps> = ({
               <span className="text-[10px] font-bold leading-none mt-0.5">GPay</span>
             </button>
             <button
-              onClick={() => handleDigit('0')}
-              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center ${
+              type="button"
+              onPointerDown={(e) => { e.preventDefault(); handleDigit('0'); }}
+              onClick={(e) => e.preventDefault()}
+              className={`aspect-square rounded-full text-3xl sm:text-4xl font-normal flex items-center justify-center touch-none select-none ${
                 isLight ? 'bg-white active:bg-[#e4e4e8] text-[#1c1c1e]' : 'bg-[#1e1e20] active:bg-[#303034] text-white'
               }`}
             >
               0
             </button>
             <button
-              onClick={() => handleDigit('.')}
-              className={`aspect-square rounded-full text-3xl sm:text-4xl font-bold flex items-center justify-center ${
+              type="button"
+              onPointerDown={(e) => { e.preventDefault(); handleDigit('.'); }}
+              onClick={(e) => e.preventDefault()}
+              className={`aspect-square rounded-full text-3xl sm:text-4xl font-bold flex items-center justify-center touch-none select-none ${
                 isLight ? 'bg-white active:bg-[#e4e4e8] text-[#1c1c1e]' : 'bg-[#1e1e20] active:bg-[#303034] text-white'
               }`}
             >
               .
             </button>
             <button
-              onClick={handleEvaluate}
-              className="aspect-square rounded-full text-4xl sm:text-5xl font-light flex items-center justify-center bg-[#2ebd59] active:bg-[#259b48] text-white shadow-xs"
+              type="button"
+              onPointerDown={(e) => { e.preventDefault(); handleEvaluate(); }}
+              onClick={(e) => e.preventDefault()}
+              className="aspect-square rounded-full text-4xl sm:text-5xl font-light flex items-center justify-center bg-[#2ebd59] active:bg-[#259b48] text-white shadow-xs touch-none select-none"
             >
               =
             </button>

@@ -25,6 +25,15 @@ public class MainActivity extends BridgeActivity {
             controller.show(WindowInsetsCompat.Type.statusBars());
             controller.setAppearanceLightStatusBars(false);
         }
+
+        if (bridge != null && bridge.getWebView() != null) {
+            android.webkit.WebView webView = bridge.getWebView();
+            webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+            webView.setVerticalScrollBarEnabled(false);
+            webView.setHorizontalScrollBarEnabled(false);
+            android.webkit.WebSettings settings = webView.getSettings();
+            settings.setDomStorageEnabled(true);
+        }
     }
 
     @Override
