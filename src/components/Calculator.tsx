@@ -72,6 +72,14 @@ export const Calculator: React.FC<CalculatorProps> = ({
   // Touch scroll detection to prevent accidental clicks when scrolling history
   const touchStartYRef = useRef<number | null>(null);
   const isScrollingRef = useRef<boolean>(false);
+  const equationContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto scroll to bottom when multiline equation wraps upwards
+  useEffect(() => {
+    if (equationContainerRef.current) {
+      equationContainerRef.current.scrollTop = equationContainerRef.current.scrollHeight;
+    }
+  }, [equation]);
 
   // Compute live result in real time
   const liveResult = useMemo(() => {
@@ -614,10 +622,10 @@ export const Calculator: React.FC<CalculatorProps> = ({
     const chars = eqStr.split('');
 
     return (
-      <span className="inline-flex items-center justify-end whitespace-nowrap select-none">
+      <span className="inline-flex flex-wrap items-center justify-end select-none break-all leading-normal max-w-full gap-y-1">
         {/* Cursor at very start (index 0) */}
         {cur === 0 && (
-          <span className="w-[3px] h-8 sm:h-10 bg-[#2ebd59] inline-block mr-0.5 rounded-full animate-pulse align-middle shrink-0" />
+          <span className="w-[3px] h-7 sm:h-9 bg-[#2ebd59] inline-block mr-0.5 rounded-full animate-pulse align-middle shrink-0" />
         )}
 
         {chars.map((ch, idx) => {
@@ -632,7 +640,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
                   e.stopPropagation();
                   setCursorIndex(idx + 1);
                 }}
-                className={`cursor-pointer hover:opacity-80 active:bg-emerald-500/20 rounded px-0.5 transition-colors ${
+                className={`cursor-pointer hover:opacity-80 active:bg-emerald-500/20 rounded px-0.5 transition-colors inline-block ${
                   isOp
                     ? 'text-[#2ebd59] font-normal mx-0.5'
                     : isLight
@@ -646,7 +654,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
 
               {/* Cursor at this position */}
               {isCursorHere && (
-                <span className="w-[3px] h-8 sm:h-10 bg-[#2ebd59] inline-block mx-0.5 rounded-full animate-pulse align-middle shrink-0" />
+                <span className="w-[3px] h-7 sm:h-9 bg-[#2ebd59] inline-block mx-0.5 rounded-full animate-pulse align-middle shrink-0" />
               )}
             </React.Fragment>
           );
@@ -805,7 +813,10 @@ export const Calculator: React.FC<CalculatorProps> = ({
       </div>
 
       {/* 1. TOP DISPLAY AREA: PRESERVES ONGOING CALCULATION (e.g. 500+) WHILE VIEWING HISTORY */}
-      <div className="flex-1 flex flex-col justify-end px-2 pt-6 pb-2 min-h-[170px]">
+      <div
+        ref={equationContainerRef}
+        className="flex-1 flex flex-col justify-end px-2 pt-2 pb-2 min-h-[170px] max-h-[35vh] sm:max-h-[42vh] overflow-y-auto scrollbar-none"
+      >
         {/* Error message if any */}
         {errorMessage && (
           <div className="text-right text-xs text-rose-500 font-medium py-1 animate-pulse">
@@ -813,15 +824,23 @@ export const Calculator: React.FC<CalculatorProps> = ({
           </div>
         )}
 
-        {/* Line 1: Main Expression: 500+ with green + operator (or any ongoing calculation) */}
-        <div className="text-right text-4xl sm:text-5xl font-light tracking-tight overflow-x-auto whitespace-nowrap scrollbar-none py-1">
+        {/* Line 1: Main Expression: Wraps UPWARD onto multiple lines instead of scrolling horizontally! */}
+        <div
+          className={`text-right font-light tracking-tight w-full py-1 break-words transition-all duration-150 ${
+            equation.length > 32
+              ? 'text-2xl sm:text-3xl leading-snug'
+              : equation.length > 16
+              ? 'text-3xl sm:text-4xl leading-snug'
+              : 'text-4xl sm:text-5xl leading-tight'
+          }`}
+        >
           {renderFormattedEquation(equation)}
         </div>
 
         {/* Line 2: Live Computed Result (e.g. 500 or calculated subtotal) */}
         {liveResult ? (
           <div
-            className={`text-right text-2xl sm:text-3xl font-normal tracking-tight mt-2 mb-1 overflow-x-auto whitespace-nowrap scrollbar-none ${
+            className={`text-right text-2xl sm:text-3xl font-normal tracking-tight mt-1 mb-1 overflow-x-auto whitespace-nowrap scrollbar-none ${
               isLight ? 'text-[#222222]' : 'text-stone-200'
             }`}
           >
