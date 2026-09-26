@@ -19,6 +19,22 @@ if ('caches' in window) {
   });
 }
 
+// Global safeguard: prevent any accidental upi: link clicks from opening Android system app chooser
+window.addEventListener(
+  'click',
+  (e) => {
+    const anchor = (e.target as HTMLElement)?.closest('a');
+    if (anchor) {
+      const href = anchor.getAttribute('href') || '';
+      if (href.startsWith('upi:')) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }
+  },
+  true
+);
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

@@ -1005,13 +1005,16 @@ export const UpiQrModal: React.FC<UpiQrModalProps> = ({
                 </div>
 
                 {qrDataUrl ? (
-                  <div className="relative group">
+                  <div className="relative group flex flex-col items-center">
                     <img
                       id="full-qr-code-image"
                       src={qrDataUrl}
                       alt="Google Pay Business UPI QR"
-                      className="w-56 h-56 sm:w-60 sm:h-60 object-contain rounded-lg p-1 bg-white"
+                      className="w-56 h-56 sm:w-60 sm:h-60 object-contain rounded-lg p-1 bg-white pointer-events-none select-none"
                     />
+                    <div className="mt-2 flex items-center justify-center gap-1.5 py-1 px-3 rounded-full bg-blue-50 text-blue-800 text-[11px] font-semibold border border-blue-200">
+                      <span>📷 ગ્રાહક પોતાના મોબાઈલમાંથી આ QR સ્કેન કરશે</span>
+                    </div>
                   </div>
                 ) : (
                   <div className="w-56 h-56 flex items-center justify-center text-stone-400 text-xs">
@@ -1143,16 +1146,27 @@ export const UpiQrModal: React.FC<UpiQrModalProps> = ({
                 <span>ગ્રાહકે પેમેન્ટ કર્યું? કન્ફર્મ કરો (Payment Received)</span>
               </button>
 
-              {/* Google Pay Direct App & WhatsApp Actions */}
+              {/* Action Buttons: Purely in-app with NO external upi:// app-picker intent */}
               <div id="upi-send-options-container" className="w-full flex flex-col gap-2 pt-1">
-                <a
-                  id="gpay-open-direct-btn"
-                  href={gpayDirectUri}
+                <button
+                  id="gpay-copy-vpa-btn"
+                  type="button"
+                  onClick={handleCopyVpa}
                   className="w-full py-2.5 px-3 rounded-xl bg-[#1a73e8] hover:bg-[#1557b0] active:scale-[0.99] text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-sm transition-all text-center"
+                  title="Copy UPI ID to clipboard"
                 >
-                  <ExternalLink className="w-4 h-4" />
-                  <span>Google Pay માં ખોલો (Open in Google Pay)</span>
-                </a>
+                  {copiedVpa ? (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-300 stroke-[2.5]" />
+                      <span>UPI ID કોપી થઈ ગયું! ({vpa})</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4" />
+                      <span>UPI ID કોપી કરો ({vpa})</span>
+                    </>
+                  )}
+                </button>
 
                 <a
                   id="upi-send-whatsapp-btn"
