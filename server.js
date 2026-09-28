@@ -35,7 +35,7 @@ app.get("/api/payments/check-by-remark", (req, res) => {
     const note = (p.note || "").toLowerCase();
     const cleanRmk = remarkQuery.replace(/[^a-z0-9]/g, "");
     const cleanNote = note.replace(/[^a-z0-9]/g, "");
-    return cleanNote.includes(cleanRmk) || cleanRmk.includes(cleanNote);
+    return cleanNote && cleanRmk && cleanNote === cleanRmk;
   });
   if (found) {
     res.json({ status: "SUCCESS", payment: found });
