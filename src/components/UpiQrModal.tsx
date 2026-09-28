@@ -24,9 +24,11 @@ interface UpiQrModalProps {
 
 const STORAGE_VPA_KEY = 'upi_calculator_vpa_address';
 const STORAGE_PAYEE_KEY = 'upi_calculator_payee_name';
+const STORAGE_REMARK_KEY = 'upi_calculator_remark';
 
 const DEFAULT_VPA = '9429032801@okbizaxis';
 const DEFAULT_PAYEE = 'Merchant Store';
+const DEFAULT_REMARK = 'Grocery Bill Payment';
 
 // Common Google Pay / UPI bank suffixes for quick selection
 const GPAY_SUFFIXES = [
@@ -63,6 +65,11 @@ export const UpiQrModal: React.FC<UpiQrModalProps> = ({
     return localStorage.getItem(STORAGE_PAYEE_KEY) || DEFAULT_PAYEE;
   });
 
+  // Transaction Remark
+  const [remark, setRemark] = useState<string>(() => {
+    return localStorage.getItem(STORAGE_REMARK_KEY) || DEFAULT_REMARK;
+  });
+
   const [amount, setAmount] = useState<string>('');
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
   const [copiedVpa, setCopiedVpa] = useState<boolean>(false);
@@ -73,6 +80,7 @@ export const UpiQrModal: React.FC<UpiQrModalProps> = ({
   // Settings form states
   const [tempVpa, setTempVpa] = useState<string>(vpa);
   const [tempPayee, setTempPayee] = useState<string>(payeeName);
+  const [tempRemark, setTempRemark] = useState<string>(remark);
   const [settingsSaved, setSettingsSaved] = useState<boolean>(false);
 
   // Sync amount from calculator display when opened
@@ -87,10 +95,11 @@ export const UpiQrModal: React.FC<UpiQrModalProps> = ({
       }
       setTempVpa(vpa);
       setTempPayee(payeeName);
+      setTempRemark(remark);
       setIsSettingsOpen(false);
       setSavedToHistoryToast(false);
     }
-  }, [isOpen, calculatedAmount, vpa, payeeName]);
+  }, [isOpen, calculatedAmount, vpa, payeeName, remark]);
 
   // Construct official UPI URI with Google Pay parameters
   const upiUri = useMemo(() => {
@@ -104,10 +113,10 @@ export const UpiQrModal: React.FC<UpiQrModalProps> = ({
       params.append('am', parseFloat(amount).toFixed(2));
     }
     params.append('cu', 'INR');
-    params.append('tn', 'Bill Payment');
+    params.append('tn', (remark || DEFAULT_REMARK).trim());
 
     return `upi://pay?${params.toString()}`;
-  }, [vpa, payeeName, amount]);
+  }, [vpa, payeeName, amount, remark]);
 
   // Generate full QR Code image
   useEffect(() => {
@@ -171,13 +180,16 @@ export const UpiQrModal: React.FC<UpiQrModalProps> = ({
     e.preventDefault();
     const cleanVpa = tempVpa.trim() || DEFAULT_VPA;
     const cleanPayee = tempPayee.trim() || DEFAULT_PAYEE;
+    const cleanRemark = tempRemark.trim() || DEFAULT_REMARK;
 
     setVpa(cleanVpa);
     setPayeeName(cleanPayee);
+    setRemark(cleanRemark);
 
     try {
       localStorage.setItem(STORAGE_VPA_KEY, cleanVpa);
       localStorage.setItem(STORAGE_PAYEE_KEY, cleanPayee);
+      localStorage.setItem(STORAGE_REMARK_KEY, cleanRemark);
     } catch {
       // ignore
     }
@@ -192,6 +204,7 @@ export const UpiQrModal: React.FC<UpiQrModalProps> = ({
   // Save transaction to local history ledger (without hiding the QR code!)
   const handleSaveToHistory = () => {
     const amtNum = parseFloat(amount) || 0;
+    const currentRemark = (remark || DEFAULT_REMARK).trim();
     const tx: PaymentTransaction = {
       id: `tx-${Date.now()}`,
       orderId: `GPAY-${Date.now().toString().slice(-6)}`,
@@ -200,7 +213,7 @@ export const UpiQrModal: React.FC<UpiQrModalProps> = ({
       utr: `${Math.floor(400000000000 + Math.random() * 599999999999)}`,
       vpa: vpa || DEFAULT_VPA,
       payeeName: payeeName || DEFAULT_PAYEE,
-      note: 'Bill Payment',
+      note: currentRemark,
       status: 'SUCCESS',
       timestamp: Date.now(),
       source: 'gpay',
@@ -217,14 +230,16 @@ export const UpiQrModal: React.FC<UpiQrModalProps> = ({
   // WhatsApp share link
   const whatsappUrl = useMemo(() => {
     const amtText = amount ? `*₹${parseFloat(amount).toFixed(2)}*` : 'રકમ';
+    const currentRemark = (remark || DEFAULT_REMARK).trim();
     const text =
       `🏪 *${payeeName}* તરફથી Google Pay / UPI પેમેન્ટ વિગત:\n\n` +
       `💰 ચૂકવવાપાત્ર રકમ: ${amtText}\n` +
-      `🆔 UPI ID: *${vpa}*\n\n` +
+      `🆔 UPI ID: *${vpa}*\n` +
+      `📝 Remark: *${currentRemark}*\n\n` +
       `📲 સીધું પેમેન્ટ કરવા માટે આ લિંક પર ક્લિક કરો:\n${upiUri}\n\n` +
       `_Google Pay, PhonePe, Paytm અથવા કોઈપણ UPI એપથી પેમેન્ટ કરી શકો છો._`;
     return `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-  }, [payeeName, amount, vpa, upiUri]);
+  }, [payeeName, amount, vpa, remark, upiUri]);
 
   if (!isOpen) return null;
 
@@ -358,12 +373,29 @@ export const UpiQrModal: React.FC<UpiQrModalProps> = ({
                   </div>
                 </div>
 
+                <div>
+                  <label className="block text-[11px] font-semibold text-stone-700 mb-1">
+                    પેમેન્ટ રિમાર્ક / નોંધ (UPI Remark / Note):
+                  </label>
+                  <input
+                    type="text"
+                    value={tempRemark}
+                    onChange={(e) => setTempRemark(e.target.value)}
+                    placeholder="Grocery Bill Payment"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-stone-300 bg-white text-stone-900 text-xs focus:outline-none focus:border-blue-600 font-medium"
+                  />
+                  <p className="text-[10px] text-stone-500 mt-1">
+                    ગ્રાહકની UPI એપમાં આ રિમાર્ક દેખાશે.
+                  </p>
+                </div>
+
                 <div className="pt-1 flex items-center justify-between">
                   <button
                     type="button"
                     onClick={() => {
                       setTempVpa(DEFAULT_VPA);
                       setTempPayee(DEFAULT_PAYEE);
+                      setTempRemark(DEFAULT_REMARK);
                     }}
                     className="text-[11px] text-stone-500 hover:text-stone-800 underline"
                   >
@@ -478,8 +510,14 @@ export const UpiQrModal: React.FC<UpiQrModalProps> = ({
                   alt="Google Pay Business UPI QR"
                   className="w-56 h-56 sm:w-60 sm:h-60 object-contain rounded-lg p-1 bg-white pointer-events-none select-none"
                 />
-                <div className="mt-2 flex items-center justify-center gap-1.5 py-1 px-3 rounded-full bg-blue-50 text-blue-800 text-[11px] font-semibold border border-blue-200">
-                  <span>📷 ગ્રાહક પોતાના મોબાઈલમાંથી આ QR સ્કેન કરશે</span>
+                <div className="mt-2 flex flex-col items-center gap-1.5 w-full">
+                  <div className="flex items-center justify-center gap-1.5 py-1 px-3 rounded-full bg-blue-50 text-blue-800 text-[11px] font-semibold border border-blue-200">
+                    <span>📷 ગ્રાહક પોતાના મોબાઈલમાંથી આ QR સ્કેન કરશે</span>
+                  </div>
+                  <div className="flex items-center justify-center gap-1.5 py-1 px-3 rounded-lg bg-emerald-50 text-emerald-900 text-xs font-semibold border border-emerald-200 w-full max-w-[260px]">
+                    <span className="text-[11px] text-emerald-700 font-medium">રિમાર્ક (Remark):</span>
+                    <span className="font-bold truncate">{remark || DEFAULT_REMARK}</span>
+                  </div>
                 </div>
               </div>
             ) : (
