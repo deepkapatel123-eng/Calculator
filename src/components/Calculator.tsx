@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   Check,
   Edit3,
+  Banknote,
 } from 'lucide-react';
 import { evaluateExpression, formatIndianNumber } from '../utils/calculatorEngine';
 import { HistoryItem, PaymentTransaction } from '../types';
@@ -30,6 +31,7 @@ interface CalculatorProps {
   onClearExternalInsert?: () => void;
   onOpenConverter: () => void;
   onOpenUpiQr: (amount: string) => void;
+  onOpenDenomination?: (amount: string) => void;
   onOpenApkModal?: () => void;
   onOpenPaymentHistory?: () => void;
   onDirectPaymentReceived?: (tx: PaymentTransaction) => void;
@@ -46,6 +48,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
   onClearExternalInsert,
   onOpenConverter,
   onOpenUpiQr,
+  onOpenDenomination,
   onOpenApkModal,
   onOpenPaymentHistory,
   onDirectPaymentReceived,
@@ -536,6 +539,15 @@ export const Calculator: React.FC<CalculatorProps> = ({
     onOpenUpiQr(cleanAmt && Number(cleanAmt) > 0 ? cleanAmt : '0');
   }, [liveResult, equation, onOpenUpiQr, triggerFeedback]);
 
+  // Trigger Indian Currency Denomination Counter
+  const handleTriggerDenomination = useCallback(() => {
+    triggerFeedback();
+    if (!onOpenDenomination) return;
+    const amt = liveResult || equation;
+    const cleanAmt = amt.replace(/[^0-9.]/g, '');
+    onOpenDenomination(cleanAmt && Number(cleanAmt) > 0 ? cleanAmt : '0');
+  }, [liveResult, equation, onOpenDenomination, triggerFeedback]);
+
   // Keyboard support
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -604,8 +616,50 @@ export const Calculator: React.FC<CalculatorProps> = ({
       .join('');
   }
 
-  // Render the equation with vibrant green operators matching the screenshot
-  // Render the equation with interactive cursor positioning
+  // Compute character indices after which an Indian comma (,) should visually appear
+  const getIndianCommaAfterIndices = (eqStr: string): Set<number> => {
+    const commaAfter = new Set<number>();
+    let inDecimal = false;
+    let inExponent = false;
+
+    for (let i = 0; i < eqStr.length; i++) {
+      const ch = eqStr[i];
+      if (ch === '.') {
+        inDecimal = true;
+        continue;
+      }
+      if (ch === 'e' || ch === 'E') {
+        inExponent = true;
+        continue;
+      }
+      if (!/[0-9]/.test(ch)) {
+        if ((ch === '+' || ch === '-') && i > 0 && (eqStr[i - 1] === 'e' || eqStr[i - 1] === 'E')) {
+          continue;
+        }
+        inDecimal = false;
+        inExponent = false;
+        continue;
+      }
+      if (!inDecimal && !inExponent) {
+        let j = i;
+        while (j < eqStr.length && /[0-9]/.test(eqStr[j])) {
+          j++;
+        }
+        const intLen = j - i;
+        for (let k = 0; k < intLen; k++) {
+          const rem = intLen - 1 - k;
+          if (rem >= 3 && (rem - 3) % 2 === 0) {
+            commaAfter.add(i + k);
+          }
+        }
+        i = j - 1;
+      }
+    }
+
+    return commaAfter;
+  };
+
+  // Render the equation / final answer with Indian standard commas & interactive cursor positioning
   const renderFormattedEquation = (eqStr: string) => {
     if (!eqStr || eqStr === '0') {
       return (
@@ -620,6 +674,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
 
     const cur = cursorIndex === null || cursorIndex > eqStr.length ? eqStr.length : cursorIndex;
     const chars = eqStr.split('');
+    const commaAfter = getIndianCommaAfterIndices(eqStr);
 
     return (
       <span className="inline-flex flex-wrap items-center justify-end select-none break-all leading-normal max-w-full gap-y-1">
@@ -632,6 +687,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
           const isOp = ['+', '−', '×', '÷', '-', '*', '/'].includes(ch);
           const displayChar = ch === '*' ? '×' : ch === '/' ? '÷' : ch === '-' ? '−' : ch;
           const isCursorHere = cur === idx + 1;
+          const hasCommaAfter = commaAfter.has(idx);
 
           return (
             <React.Fragment key={idx}>
@@ -640,7 +696,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
                   e.stopPropagation();
                   setCursorIndex(idx + 1);
                 }}
-                className={`cursor-pointer hover:opacity-80 active:bg-emerald-500/20 rounded px-0.5 transition-colors inline-block ${
+                className={`cursor-pointer hover:opacity-80 active:bg-emerald-500/20 rounded px-[1px] transition-colors inline-block ${
                   isOp
                     ? 'text-[#2ebd59] font-normal mx-0.5'
                     : isLight
@@ -651,6 +707,20 @@ export const Calculator: React.FC<CalculatorProps> = ({
               >
                 {displayChar}
               </span>
+
+              {hasCommaAfter && (
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCursorIndex(idx + 1);
+                  }}
+                  className={`cursor-pointer select-none inline-block ${
+                    isLight ? 'text-[#222222]' : 'text-white'
+                  }`}
+                >
+                  ,
+                </span>
+              )}
 
               {/* Cursor at this position */}
               {isCursorHere && (
@@ -797,6 +867,23 @@ export const Calculator: React.FC<CalculatorProps> = ({
             </div>
             <span>GPay QR</span>
           </button>
+
+          {/* Indian Currency Denomination Counter Button */}
+          {onOpenDenomination && (
+            <button
+              id="indian-currency-denomination-btn"
+              onClick={handleTriggerDenomination}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-semibold transition-all active:scale-95 shadow-2xs ${
+                isLight
+                  ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
+                  : 'bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-400 border border-emerald-800/40'
+              }`}
+              title="Indian Currency Denomination (ચલણી નોટ ગણતરી)"
+            >
+              <Banknote className="w-3.5 h-3.5 stroke-[2.2]" />
+              <span>₹ Notes</span>
+            </button>
+          )}
         </div>
 
         {onToggleTheme && (

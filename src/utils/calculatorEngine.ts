@@ -343,24 +343,26 @@ export function formatResultNumber(num: number): string {
 export function formatIndianNumber(val: string): string {
   if (!val) return '';
   if (val === 'Error' || val.startsWith('Cannot') || val.includes('Error')) return val;
+  if (/[eE]/.test(val)) return val;
 
-  const parts = val.split('.');
+  const cleanVal = val.replace(/,/g, '');
+  const parts = cleanVal.split('.');
   const integerPart = parts[0];
   const decimalPart = parts.length > 1 ? '.' + parts[1] : '';
 
-  const isNegative = integerPart.startsWith('-');
-  const absInt = isNegative ? integerPart.slice(1) : integerPart;
+  const hasAsciiMinus = integerPart.startsWith('-');
+  const hasUnicodeMinus = integerPart.startsWith('−');
+  const sign = hasAsciiMinus ? '-' : hasUnicodeMinus ? '−' : '';
+  const absInt = sign ? integerPart.slice(1) : integerPart;
 
   if (/^\d+$/.test(absInt)) {
-    try {
-      const num = BigInt(absInt);
-      const formattedInt = num.toLocaleString('en-IN');
-      return (isNegative ? '-' : '') + formattedInt + decimalPart;
-    } catch {
-      const num = Number(absInt);
-      const formattedInt = num.toLocaleString('en-IN');
-      return (isNegative ? '-' : '') + formattedInt + decimalPart;
+    if (absInt.length <= 3) {
+      return sign + absInt + decimalPart;
     }
+    const lastThree = absInt.slice(-3);
+    const rest = absInt.slice(0, -3);
+    const formattedRest = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',');
+    return sign + formattedRest + ',' + lastThree + decimalPart;
   }
 
   return val;

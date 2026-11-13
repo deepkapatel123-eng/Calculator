@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { UNIT_CATEGORIES, convertUnits } from '../utils/unitsData';
 import { UnitCategoryKey, HistoryItem } from '../types';
-import { formatResultNumber } from '../utils/calculatorEngine';
+import { formatResultNumber, formatIndianNumber } from '../utils/calculatorEngine';
 
 interface UnitConverterProps {
   onAddHistory: (item: Omit<HistoryItem, 'id' | 'timestamp'>) => void;
@@ -79,6 +79,7 @@ export const UnitConverter: React.FC<UnitConverterProps> = ({
   }, [activeCategoryKey, fromUnitId, toUnitId, parsedInput, isValidNumber]);
 
   const formattedOutput = isValidNumber ? formatResultNumber(conversion.result) : '0';
+  const indianFormattedOutput = formatIndianNumber(formattedOutput);
 
   const fromUnitObj = activeCategory.units.find((u) => u.id === fromUnitId);
   const toUnitObj = activeCategory.units.find((u) => u.id === toUnitId);
@@ -93,7 +94,7 @@ export const UnitConverter: React.FC<UnitConverterProps> = ({
 
   // Copy result
   const handleCopy = () => {
-    navigator.clipboard.writeText(`${formattedOutput} ${toUnitObj?.symbol || ''}`);
+    navigator.clipboard.writeText(`${indianFormattedOutput} ${toUnitObj?.symbol || ''}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -108,7 +109,7 @@ export const UnitConverter: React.FC<UnitConverterProps> = ({
     onAddHistory({
       type: 'conversion',
       expression: expr,
-      result: `${formattedOutput} ${toSymbol}`,
+      result: `${indianFormattedOutput} ${toSymbol}`,
       category: activeCategory.name,
       details: conversion.formula,
     });
@@ -124,7 +125,7 @@ export const UnitConverter: React.FC<UnitConverterProps> = ({
       const conv = convertUnits(activeCategoryKey, fromUnitId, u.id, parsedInput);
       return {
         unit: u,
-        value: formatResultNumber(conv.result),
+        value: formatIndianNumber(formatResultNumber(conv.result)),
         isCurrentTarget: u.id === toUnitId,
       };
     });
@@ -263,7 +264,7 @@ export const UnitConverter: React.FC<UnitConverterProps> = ({
               <span className="font-mono font-semibold text-[#2ebd59]">{toUnitObj?.symbol}</span>
             </div>
             <div className="w-full text-2xl font-bold font-mono text-[#2ebd59] truncate py-0.5">
-              {formattedOutput}
+              {indianFormattedOutput}
             </div>
             <select
               id="converter-to-unit-select"

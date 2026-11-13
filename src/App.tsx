@@ -6,6 +6,7 @@ import { UnitConverter } from './components/UnitConverter';
 import { UpiQrModal } from './components/UpiQrModal';
 import { ApkDownloadModal } from './components/ApkDownloadModal';
 import { PaymentHistoryModal } from './components/PaymentHistoryModal';
+import { CurrencyDenominationModal } from './components/CurrencyDenominationModal';
 import { HistoryItem, PaymentTransaction } from './types';
 
 const STORAGE_KEY = 'calculator_app_history_v3';
@@ -103,6 +104,10 @@ export default function App() {
   // UPI QR Modal state
   const [isUpiQrOpen, setIsUpiQrOpen] = useState<boolean>(false);
   const [upiAmount, setUpiAmount] = useState<string>('0');
+
+  // Indian Currency Denomination Modal state
+  const [isDenominationOpen, setIsDenominationOpen] = useState<boolean>(false);
+  const [denominationBillAmount, setDenominationBillAmount] = useState<string>('0');
 
   // APK Download / Install Modal state
   const [isApkModalOpen, setIsApkModalOpen] = useState<boolean>(false);
@@ -211,6 +216,16 @@ export default function App() {
     }
   }, []);
 
+  const handleOpenDenomination = useCallback((amount?: string) => {
+    setDenominationBillAmount(amount || '0');
+    setIsDenominationOpen(true);
+    try {
+      window.history.pushState({ modal: 'denomination' }, '');
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const handleOpenApkModal = useCallback(() => {
     setIsApkModalOpen(true);
     try {
@@ -231,6 +246,10 @@ export default function App() {
       setIsUpiQrOpen(false);
       handled = true;
     }
+    if (isDenominationOpen) {
+      setIsDenominationOpen(false);
+      handled = true;
+    }
     if (isApkModalOpen) {
       setIsApkModalOpen(false);
       handled = true;
@@ -240,7 +259,7 @@ export default function App() {
       handled = true;
     }
     return handled;
-  }, [isPaymentHistoryOpen, isUpiQrOpen, isApkModalOpen, activeTab]);
+  }, [isPaymentHistoryOpen, isUpiQrOpen, isDenominationOpen, isApkModalOpen, activeTab]);
 
   // Native Android Hardware / Gesture Back Button Listener
   useEffect(() => {
@@ -298,6 +317,7 @@ export default function App() {
               onClearExternalInsert={() => setExternalInsertValue(null)}
               onOpenConverter={handleOpenConverter}
               onOpenUpiQr={(amt) => handleOpenUpiQr(amt)}
+              onOpenDenomination={(amt) => handleOpenDenomination(amt)}
               onOpenApkModal={handleOpenApkModal}
               onOpenPaymentHistory={() => setIsPaymentHistoryOpen(true)}
               onDirectPaymentReceived={handlePaymentReceived}
@@ -340,6 +360,15 @@ export default function App() {
         payments={payments}
         onClearHistory={handleClearPayments}
         isLight={theme === 'light'}
+      />
+
+      {/* Indian Currency Denomination Modal */}
+      <CurrencyDenominationModal
+        isOpen={isDenominationOpen}
+        onClose={() => setIsDenominationOpen(false)}
+        currentCalculatorAmount={denominationBillAmount}
+        onApplyToCalculator={(totalAmt) => setExternalInsertValue(totalAmt)}
+        theme={theme}
       />
 
       {/* Android App & APK Modal */}

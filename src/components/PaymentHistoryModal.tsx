@@ -12,6 +12,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { PaymentTransaction } from '../types';
+import { formatIndianNumber } from '../utils/calculatorEngine';
 
 interface PaymentHistoryModalProps {
   isOpen: boolean;
@@ -173,7 +174,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                     : 'text-stone-600 hover:text-stone-900'
                 }`}
               >
-                તમામ ({allTimeTotal > 0 ? `₹${allTimeTotal.toFixed(0)}` : '0'})
+                તમામ ({allTimeTotal > 0 ? `₹${formatIndianNumber(allTimeTotal.toFixed(0))}` : '0'})
               </button>
             </div>
           </div>
@@ -210,7 +211,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
 
                   <div className="text-right">
                     <div className="text-sm font-black text-emerald-700">
-                      +₹{p.amount.toFixed(2)}
+                      +₹{formatIndianNumber(p.amount.toFixed(2))}
                     </div>
                     <span className="text-[9.5px] px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 font-semibold inline-block">
                       SUCCESS

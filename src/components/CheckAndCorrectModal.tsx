@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Check, Trash2, Edit2, Plus, ArrowLeft, RefreshCw } from 'lucide-react';
-import { evaluateExpression } from '../utils/calculatorEngine';
+import { evaluateExpression, formatIndianNumber } from '../utils/calculatorEngine';
 
 export interface CalculationStep {
   id: string;
@@ -171,7 +171,7 @@ export const CheckAndCorrectModal: React.FC<CheckAndCorrectModalProps> = ({
           <div>
             <span className="text-[11px] text-emerald-800 dark:text-emerald-300 font-medium">સુધારેલો કુલ સરવાળો (Total):</span>
             <div className="text-2xl font-black text-emerald-700 dark:text-emerald-400 tracking-tight">
-              ₹{previewTotal}
+              ₹{formatIndianNumber(previewTotal)}
             </div>
           </div>
           <div className="text-right text-xs text-stone-500 font-mono">
@@ -269,7 +269,7 @@ export const CheckAndCorrectModal: React.FC<CheckAndCorrectModalProps> = ({
                             </span>
                           )}
                           <span className="text-xl font-semibold tracking-tight">
-                            {step.value}
+                            {formatIndianNumber(step.value)}
                           </span>
                         </div>
                       </div>
